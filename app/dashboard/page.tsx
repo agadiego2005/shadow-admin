@@ -3,7 +3,7 @@ import { cookies } from "next/headers"
 import { requireAdmin } from "@/lib/auth"
 import { DashboardClient } from "./DashboardClient"
 import { getConfig } from "./config-db"
-
+export const runtime = 'edge';
 export default async function DashboardPage() {
   await requireAdmin()
 

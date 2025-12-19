@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-
+export const runtime = 'edge';
 type LoginSearchParams = { error?: string; next?: string }
 
 export default async function LoginPage({
