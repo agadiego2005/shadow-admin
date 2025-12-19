@@ -19,7 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+// rimosso Tabs
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Switch } from "@/components/ui/switch"
 import {
@@ -206,217 +206,100 @@ export function DashboardClient(props: {
           </div>
         </div>
 
-        {/* Tabs */}
-        <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="activity">Activity</TabsTrigger>
-            <TabsTrigger value="danger">Danger Zone</TabsTrigger>
-          </TabsList>
+        {/* Overview tab unico senza sistema tabs */}
+        <div className="space-y-6">
+          <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            <ServiceCard
+              title="Website"
+              subtitle="Frontend pubblico"
+              status={websiteStatus}
+              checked={websiteActive}
+              disabled={isWebsitePending}
+              onCheckedChange={(checked) => {
+                setWebsiteActive(checked)
+                setActive.website(checked)
+              }}
+            />
+            <ServiceCard
+              title="API"
+              subtitle="Backend services"
+              status={apiStatus}
+              checked={apiActive}
+              disabled={isApiPending}
+              onCheckedChange={(checked) => {
+                setApiActive(checked)
+                setActive.api(checked)
+              }}
+            />
+            <ServiceCard
+              title="Dashboard"
+              subtitle="Pannello admin"
+              status={dashboardStatus}
+              checked={dashActive}
+              disabled={isDashPending}
+              onCheckedChange={(checked) => {
+                setDashActive(checked)
+                setActive.dashboard(checked)
+              }}
+            />
+            <ServiceCard
+              title="Admin"
+              subtitle="Area amministrazione"
+              status={adminStatus}
+              checked={adminActive}
+              disabled={isAdminPending}
+              onCheckedChange={(checked) => {
+                setAdminActive(checked)
+                setActive.admin(checked)
+              }}
+            />
+          </div>
 
-          <TabsContent value="overview" className="space-y-4">
-            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-              <ServiceCard
-                title="Website"
-                subtitle="Frontend pubblico"
-                status={websiteStatus}
-                checked={websiteActive}
-                disabled={isWebsitePending}
-                onCheckedChange={(checked) => {
-                  setWebsiteActive(checked)
-                  setActive.website(checked)
-                }}
-              />
-              <ServiceCard
-                title="API"
-                subtitle="Backend services"
-                status={apiStatus}
-                checked={apiActive}
-                disabled={isApiPending}
-                onCheckedChange={(checked) => {
-                  setApiActive(checked)
-                  setActive.api(checked)
-                }}
-              />
-              <ServiceCard
-                title="Dashboard"
-                subtitle="Pannello admin"
-                status={dashboardStatus}
-                checked={dashActive}
-                disabled={isDashPending}
-                onCheckedChange={(checked) => {
-                  setDashActive(checked)
-                  setActive.dashboard(checked)
-                }}
-              />
-              <ServiceCard
-                title="Admin"
-                subtitle="Area amministrazione"
-                status={adminStatus}
-                checked={adminActive}
-                disabled={isAdminPending}
-                onCheckedChange={(checked) => {
-                  setAdminActive(checked)
-                  setActive.admin(checked)
-                }}
-              />
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Activity feed</CardTitle>
-                  <CardDescription>Ultima azione (cookie) + placeholder.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-56 pr-3">
-                    <div className="space-y-3">
-                      {activity.map((a, i) => (
-                        <div key={i} className="flex items-start gap-3 rounded-lg border p-3">
-                          <div className="mt-0.5 text-muted-foreground">{a.icon}</div>
-                          <div className="space-y-0.5">
-                            <div className="text-sm font-medium">{a.title}</div>
-                            <div className="text-xs text-muted-foreground">{a.desc}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Quick checks</CardTitle>
-                  <CardDescription>Idee “fighe” da mettere dopo.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between rounded-lg border p-3">
-                    <span>Health endpoints</span>
-                    <Badge variant="outline">TODO</Badge>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border p-3">
-                    <span>Audit trail vero</span>
-                    <Badge variant="outline">TODO</Badge>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border p-3">
-                    <span>Ruoli / permessi</span>
-                    <Badge variant="outline">TODO</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="activity">
+          <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Activity (placeholder)</CardTitle>
-                <CardDescription>Qui poi ci mettiamo log server-side serio.</CardDescription>
+                <CardTitle className="text-base">Activity feed</CardTitle>
+                <CardDescription>Ultima azione (cookie) + placeholder.</CardDescription>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-72 pr-3">
-                  <div className="space-y-2">
-                    {Array.from({ length: 12 }).map((_, i) => (
-                      <div key={i} className="flex items-center justify-between rounded-md border p-3">
-                        <div className="text-sm">Evento #{i + 1}</div>
-                        <Badge variant="secondary">mock</Badge>
+                <ScrollArea className="h-56 pr-3">
+                  <div className="space-y-3">
+                    {activity.map((a, i) => (
+                      <div key={i} className="flex items-start gap-3 rounded-lg border p-3">
+                        <div className="mt-0.5 text-muted-foreground">{a.icon}</div>
+                        <div className="space-y-0.5">
+                          <div className="text-sm font-medium">{a.title}</div>
+                          <div className="text-xs text-muted-foreground">{a.desc}</div>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </ScrollArea>
               </CardContent>
             </Card>
-          </TabsContent>
 
-          <TabsContent value="danger">
-            <Card className="border-destructive/40">
+            <Card>
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <ShieldAlert className="h-4 w-4" />
-                  Danger zone
-                </CardTitle>
-                <CardDescription>
-                  Toggle hard (scrive su Turso: tabella <code>config</code>).
-                </CardDescription>
+                <CardTitle className="text-base">Quick checks</CardTitle>
+                <CardDescription>Idee “fighe” da mettere dopo.</CardDescription>
               </CardHeader>
-
-              <CardContent className="grid gap-4 grid-cols-1 sm:grid-cols-2">
-                {/* Website */}
-                <div className="flex items-center justify-between gap-2 rounded-lg border p-4 bg-destructive/5">
-                  <div>
-                    <div className="text-sm md:text-base font-medium">Website</div>
-                    <div className="text-xs md:text-sm text-muted-foreground">shutdown_website</div>
-                  </div>
-                  <Switch
-                    checked={websiteActive}
-                    onCheckedChange={(checked) => {
-                      setWebsiteActive(checked)
-                      setActive.website(checked)
-                    }}
-                    disabled={isWebsitePending}
-                    className="scale-150 [--switch-thumb-size:2rem] [--switch-track-width:4rem] [--switch-track-height:2rem]"
-                    data-large
-                  />
+              <CardContent className="space-y-2 text-sm">
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <span>Health endpoints</span>
+                  <Badge variant="outline">TODO</Badge>
                 </div>
-
-                {/* API */}
-                <div className="flex items-center justify-between gap-2 rounded-lg border p-4 bg-destructive/5">
-                  <div>
-                    <div className="text-sm md:text-base font-medium">API</div>
-                    <div className="text-xs md:text-sm text-muted-foreground">shutdown_api</div>
-                  </div>
-                  <Switch
-                    checked={apiActive}
-                    onCheckedChange={(checked) => {
-                      setApiActive(checked)
-                      setActive.api(checked)
-                    }}
-                    disabled={isApiPending}
-                    className="scale-150 [--switch-thumb-size:2rem] [--switch-track-width:4rem] [--switch-track-height:2rem]"
-                    data-large
-                  />
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <span>Audit trail vero</span>
+                  <Badge variant="outline">TODO</Badge>
                 </div>
-
-                {/* Dashboard */}
-                <div className="flex items-center justify-between gap-2 rounded-lg border p-4 bg-destructive/5">
-                  <div>
-                    <div className="text-sm md:text-base font-medium">Dashboard</div>
-                    <div className="text-xs md:text-sm text-muted-foreground">shutdown_dashboard</div>
-                  </div>
-                  <Switch
-                    checked={dashActive}
-                    onCheckedChange={(checked) => {
-                      setDashActive(checked)
-                      setActive.dashboard(checked)
-                    }}
-                    disabled={isDashPending}
-                    className="scale-150 [--switch-thumb-size:2rem] [--switch-track-width:4rem] [--switch-track-height:2rem]"
-                    data-large
-                  />
-                </div>
-
-                {/* Admin */}
-                <div className="flex items-center justify-between gap-2 rounded-lg border p-4 bg-destructive/5">
-                  <div>
-                    <div className="text-sm md:text-base font-medium">Admin</div>
-                    <div className="text-xs md:text-sm text-muted-foreground">shutdown_admin</div>
-                  </div>
-                  <Switch
-                    checked={adminActive}
-                    onCheckedChange={(checked) => {
-                      setAdminActive(checked)
-                      setActive.admin(checked)
-                    }}
-                    disabled={isAdminPending}
-                    className="scale-150 [--switch-thumb-size:2rem] [--switch-track-width:4rem] [--switch-track-height:2rem]"
-                    data-large
-                  />
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <span>Ruoli / permessi</span>
+                  <Badge variant="outline">TODO</Badge>
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
       </div>
     </div>
   )
