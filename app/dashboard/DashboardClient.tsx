@@ -59,21 +59,22 @@ function ServiceCard({
   disabled?: boolean
   onCheckedChange: (checked: boolean) => void
 }) {
+  // Switch grande e centrato verticalmente anche su mobile
   return (
     <Card className="relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0 opacity-60 [background:radial-gradient(80%_60%_at_50%_0%,hsl(var(--muted))_0%,transparent_60%)]" />
       <CardHeader className="relative">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
-            <CardTitle className="text-base">{title}</CardTitle>
-            <CardDescription>{subtitle}</CardDescription>
+            <CardTitle className="text-base md:text-lg">{title}</CardTitle>
+            <CardDescription className="text-xs md:text-sm">{subtitle}</CardDescription>
           </div>
           <StatusBadge status={status} />
         </div>
       </CardHeader>
       <CardContent className="relative space-y-3">
-        <div className="flex items-center justify-between rounded-lg border p-3">
-          <div className="space-y-0.5">
+        <div className="flex flex-col items-center justify-between gap-2 sm:flex-row sm:gap-6 rounded-lg border p-4 bg-muted/40">
+          <div className="space-y-0.5 text-center sm:text-left">
             <div className="text-sm font-medium">Power</div>
             <div className="text-xs text-muted-foreground">0 = acceso, 1 = spento (Turso: config)</div>
           </div>
@@ -82,6 +83,8 @@ function ServiceCard({
             onCheckedChange={onCheckedChange}
             disabled={disabled}
             aria-label={`Toggle ${title}`}
+            className="scale-150 [--switch-thumb-size:2rem] [--switch-track-width:4rem] [--switch-track-height:2rem]"
+            data-large
           />
         </div>
       </CardContent>
@@ -212,7 +215,7 @@ export function DashboardClient(props: {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
               <ServiceCard
                 title="Website"
                 subtitle="Frontend pubblico"
@@ -338,13 +341,12 @@ export function DashboardClient(props: {
                 </CardDescription>
               </CardHeader>
 
-              <CardContent className="grid gap-3 md:grid-cols-2">
-                {/* stesso pattern per i 4 switch */}
+              <CardContent className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                 {/* Website */}
-                <div className="flex items-center justify-between rounded-lg border p-3">
+                <div className="flex items-center justify-between gap-2 rounded-lg border p-4 bg-destructive/5">
                   <div>
-                    <div className="text-sm font-medium">Website</div>
-                    <div className="text-xs text-muted-foreground">shutdown_website</div>
+                    <div className="text-sm md:text-base font-medium">Website</div>
+                    <div className="text-xs md:text-sm text-muted-foreground">shutdown_website</div>
                   </div>
                   <Switch
                     checked={websiteActive}
@@ -353,14 +355,16 @@ export function DashboardClient(props: {
                       setActive.website(checked)
                     }}
                     disabled={isWebsitePending}
+                    className="scale-150 [--switch-thumb-size:2rem] [--switch-track-width:4rem] [--switch-track-height:2rem]"
+                    data-large
                   />
                 </div>
 
                 {/* API */}
-                <div className="flex items-center justify-between rounded-lg border p-3">
+                <div className="flex items-center justify-between gap-2 rounded-lg border p-4 bg-destructive/5">
                   <div>
-                    <div className="text-sm font-medium">API</div>
-                    <div className="text-xs text-muted-foreground">shutdown_api</div>
+                    <div className="text-sm md:text-base font-medium">API</div>
+                    <div className="text-xs md:text-sm text-muted-foreground">shutdown_api</div>
                   </div>
                   <Switch
                     checked={apiActive}
@@ -369,14 +373,16 @@ export function DashboardClient(props: {
                       setActive.api(checked)
                     }}
                     disabled={isApiPending}
+                    className="scale-150 [--switch-thumb-size:2rem] [--switch-track-width:4rem] [--switch-track-height:2rem]"
+                    data-large
                   />
                 </div>
 
                 {/* Dashboard */}
-                <div className="flex items-center justify-between rounded-lg border p-3">
+                <div className="flex items-center justify-between gap-2 rounded-lg border p-4 bg-destructive/5">
                   <div>
-                    <div className="text-sm font-medium">Dashboard</div>
-                    <div className="text-xs text-muted-foreground">shutdown_dashboard</div>
+                    <div className="text-sm md:text-base font-medium">Dashboard</div>
+                    <div className="text-xs md:text-sm text-muted-foreground">shutdown_dashboard</div>
                   </div>
                   <Switch
                     checked={dashActive}
@@ -385,14 +391,16 @@ export function DashboardClient(props: {
                       setActive.dashboard(checked)
                     }}
                     disabled={isDashPending}
+                    className="scale-150 [--switch-thumb-size:2rem] [--switch-track-width:4rem] [--switch-track-height:2rem]"
+                    data-large
                   />
                 </div>
 
                 {/* Admin */}
-                <div className="flex items-center justify-between rounded-lg border p-3">
+                <div className="flex items-center justify-between gap-2 rounded-lg border p-4 bg-destructive/5">
                   <div>
-                    <div className="text-sm font-medium">Admin</div>
-                    <div className="text-xs text-muted-foreground">shutdown_admin</div>
+                    <div className="text-sm md:text-base font-medium">Admin</div>
+                    <div className="text-xs md:text-sm text-muted-foreground">shutdown_admin</div>
                   </div>
                   <Switch
                     checked={adminActive}
@@ -401,6 +409,8 @@ export function DashboardClient(props: {
                       setActive.admin(checked)
                     }}
                     disabled={isAdminPending}
+                    className="scale-150 [--switch-thumb-size:2rem] [--switch-track-width:4rem] [--switch-track-height:2rem]"
+                    data-large
                   />
                 </div>
               </CardContent>
