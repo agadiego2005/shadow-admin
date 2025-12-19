@@ -1,93 +1,52 @@
 // app/dashboard/ShutdownButtons.tsx
 "use client"
 
-import { ReactNode } from "react"
-import { useFormStatus } from "react-dom"
-import { Button } from "@/components/ui/button"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+import { Switch } from "@/components/ui/switch"
 
-function ConfirmSubmit({ children }: { children: ReactNode }) {
-  const { pending } = useFormStatus()
-  return (
-    <Button type="submit" variant="destructive" disabled={pending}>
-      {pending ? "Eseguo..." : children}
-    </Button>
-  )
-}
-
-function ShutdownConfirm({
-  label,
-  description,
-  action,
-}: {
-  label: string
-  description: string
-  action: (formData: FormData) => void | Promise<void>
+export function ShutdownButtons(props: {
+  websiteActive: boolean
+  apiActive: boolean
+  dashboardActive: boolean
+  adminActive: boolean
+  onWebsiteChange: (checked: boolean) => void
+  onApiChange: (checked: boolean) => void
+  onDashboardChange: (checked: boolean) => void
+  onAdminChange: (checked: boolean) => void
+  disabled?: boolean
 }) {
   return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button variant="destructive" className="w-full sm:w-auto">
-          {label}
-        </Button>
-      </AlertDialogTrigger>
+    <div className="grid gap-3 sm:grid-cols-2">
+      <div className="flex items-center justify-between rounded-lg border p-3">
+        <div>
+          <div className="text-sm font-medium">Website</div>
+          <div className="text-xs text-muted-foreground">shutdown_website</div>
+        </div>
+        <Switch checked={props.websiteActive} onCheckedChange={props.onWebsiteChange} disabled={props.disabled} />
+      </div>
 
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Confermi?</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
-        </AlertDialogHeader>
+      <div className="flex items-center justify-between rounded-lg border p-3">
+        <div>
+          <div className="text-sm font-medium">API</div>
+          <div className="text-xs text-muted-foreground">shutdown_api</div>
+        </div>
+        <Switch checked={props.apiActive} onCheckedChange={props.onApiChange} disabled={props.disabled} />
+      </div>
 
-        <AlertDialogFooter>
-          <AlertDialogCancel>Annulla</AlertDialogCancel>
+      <div className="flex items-center justify-between rounded-lg border p-3">
+        <div>
+          <div className="text-sm font-medium">Dashboard</div>
+          <div className="text-xs text-muted-foreground">shutdown_dashboard</div>
+        </div>
+        <Switch checked={props.dashboardActive} onCheckedChange={props.onDashboardChange} disabled={props.disabled} />
+      </div>
 
-          <form action={action}>
-            <AlertDialogAction asChild>
-              <ConfirmSubmit>Conferma</ConfirmSubmit>
-            </AlertDialogAction>
-          </form>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  )
-}
-
-export function ShutdownButtons({
-  shutdownWebsiteAction,
-  shutdownApiAction,
-  shutdownDashboardAction,
-}: {
-  shutdownWebsiteAction: any
-  shutdownApiAction: any
-  shutdownDashboardAction: any
-}) {
-  return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-      <ShutdownConfirm
-        label="Shutdown website"
-        description="Mock: simula lo spegnimento del sito pubblico."
-        action={shutdownWebsiteAction}
-      />
-      <ShutdownConfirm
-        label="Shutdown api"
-        description="Mock: simula lo spegnimento delle API."
-        action={shutdownApiAction}
-      />
-      <ShutdownConfirm
-        label="Shutdown dashboard"
-        description="Mock: simula lo spegnimento della dashboard."
-        action={shutdownDashboardAction}
-      />
+      <div className="flex items-center justify-between rounded-lg border p-3">
+        <div>
+          <div className="text-sm font-medium">Admin</div>
+          <div className="text-xs text-muted-foreground">shutdown_admin</div>
+        </div>
+        <Switch checked={props.adminActive} onCheckedChange={props.onAdminChange} disabled={props.disabled} />
+      </div>
     </div>
   )
 }

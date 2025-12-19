@@ -6,28 +6,20 @@ import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { requireAdmin } from "@/lib/auth"
 
-export type ActionState =
-  | { ok: boolean; title: string; message: string; ts: string }
-  | null
+import { setShutdownFlag, type ServiceKey } from "./config-db"
 
-type Service = "website" | "api" | "dashboard"
-type Status = "online" | "offline"
+export type ActionState = { ok: boolean; title: string; message: string; ts: string } | null
 
 const cookieOpts = {
   httpOnly: true as const,
   sameSite: "lax" as const,
   secure: process.env.NODE_ENV === "production",
   path: "/",
-  maxAge: 60 * 60 * 24 * 7, // 7 giorni
+  maxAge: 60 * 60 * 24 * 7,
 }
 
 function nowTs() {
   return new Date().toISOString()
-}
-
-async function setServiceStatus(service: Service, status: Status) {
-  const store = await cookies()
-  store.set(`${service}_status`, status, cookieOpts)
 }
 
 async function setLastAction(value: string) {
@@ -35,28 +27,50 @@ async function setLastAction(value: string) {
   store.set("last_shutdown_action", value, cookieOpts)
 }
 
-export async function shutdownWebsiteAction(_prev: ActionState, _fd: FormData): Promise<ActionState> {
-  await requireAdmin()
-  await setServiceStatus("website", "offline")
-  await setLastAction("shutdown website")
-  revalidatePath("/dashboard")
-  return { ok: true, title: "Website", message: "Website impostato OFFLINE (mock).", ts: nowTs() }
+function shutdownValueFromForm(fd: FormData): 0 | 1 {
+  // active=1 => servizio acceso  => shutdown=0
+  // active=0 => servizio spento  => shutdown=1
+  const active = String(fd.get("active") ?? "")
+  return active === "1" ? 0 : 1
 }
 
-export async function shutdownApiAction(_prev: ActionState, _fd: FormData): Promise<ActionState> {
+async function setService(service: ServiceKey, title: string, fd: FormData): Promise<ActionState> {
   await requireAdmin()
-  await setServiceStatus("api", "offline")
-  await setLastAction("shutdown api")
-  revalidatePath("/dashboard")
-  return { ok: true, title: "API", message: "API impostate OFFLINE (mock).", ts: nowTs() }
+
+  try {
+    const shutdown = shutdownValueFromForm(fd)
+    await setShutdownFlag(service, shutdown)
+
+    const pretty = shutdown === 0 ? "ACCESO" : "SPENTO"
+    await setLastAction(`${service}: ${pretty}`)
+
+    revalidatePath("/dashboard")
+    return {
+      ok: true,
+      title,
+      message: `${title} impostato ${pretty} (Turso: config.${"shutdown_" + service}).`,
+      ts: nowTs(),
+    }
+  } catch (e: any) {
+    const msg = e?.message ? String(e.message) : "Errore sconosciuto"
+    return { ok: false, title, message: msg, ts: nowTs() }
+  }
 }
 
-export async function shutdownDashboardAction(_prev: ActionState, _fd: FormData): Promise<ActionState> {
-  await requireAdmin()
-  await setServiceStatus("dashboard", "offline")
-  await setLastAction("shutdown dashboard")
-  revalidatePath("/dashboard")
-  return { ok: true, title: "Dashboard", message: "Dashboard impostata OFFLINE (mock).", ts: nowTs() }
+export async function setWebsiteActiveAction(_prev: ActionState, fd: FormData) {
+  return setService("website", "Website", fd)
+}
+
+export async function setApiActiveAction(_prev: ActionState, fd: FormData) {
+  return setService("api", "API", fd)
+}
+
+export async function setDashboardActiveAction(_prev: ActionState, fd: FormData) {
+  return setService("dashboard", "Dashboard", fd)
+}
+
+export async function setAdminActiveAction(_prev: ActionState, fd: FormData) {
+  return setService("admin", "Admin", fd)
 }
 
 export async function logoutAction() {

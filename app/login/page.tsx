@@ -1,17 +1,20 @@
-// app/login/page.tsx
 import { loginAction } from "./actions"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 
-export default function LoginPage({
+type LoginSearchParams = { error?: string; next?: string }
+
+export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: { error?: string; next?: string }
+  searchParams: Promise<LoginSearchParams>
 }) {
-  const nextPath = searchParams.next ?? "/dashboard"
-  const showError = searchParams.error === "1"
+  const sp = await searchParams
+
+  const nextPath = sp.next ?? "/dashboard"
+  const showError = sp.error === "1"
 
   return (
     <div className="min-h-[calc(100vh-1px)] flex items-center justify-center p-6">
@@ -22,9 +25,7 @@ export default function LoginPage({
         </CardHeader>
 
         <CardContent>
-          {showError ? (
-            <p className="mb-4 text-sm text-destructive">Credenziali non valide.</p>
-          ) : null}
+          {showError ? <p className="mb-4 text-sm text-destructive">Credenziali non valide.</p> : null}
 
           <form action={loginAction} className="space-y-4">
             <input type="hidden" name="next" value={nextPath} />

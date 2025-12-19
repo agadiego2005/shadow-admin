@@ -1,16 +1,18 @@
 // app/dashboard/DashboardClient.tsx
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 import { useActionState } from "react"
 import { toast } from "sonner"
-import { Power, ShieldAlert, Activity, LayoutDashboard, User } from "lucide-react"
+import { ShieldAlert, Activity, LayoutDashboard, User } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 import type { ActionState } from "./actions"
 import {
-  shutdownApiAction,
-  shutdownDashboardAction,
-  shutdownWebsiteAction,
+  setApiActiveAction,
+  setDashboardActiveAction,
+  setWebsiteActiveAction,
+  setAdminActiveAction,
   logoutAction,
 } from "./actions"
 
@@ -19,6 +21,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Switch } from "@/components/ui/switch"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,27 +30,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { useFormStatus } from "react-dom"
-
-function SubmitButton({ children }: { children: React.ReactNode }) {
-  const { pending } = useFormStatus()
-  return (
-    <Button type="submit" variant="destructive" disabled={pending}>
-      {pending ? "Eseguo..." : children}
-    </Button>
-  )
-}
 
 function StatusBadge({ status }: { status: "online" | "offline" }) {
   return (
@@ -62,54 +44,20 @@ function StatusBadge({ status }: { status: "online" | "offline" }) {
   )
 }
 
-function ShutdownConfirm({
-  label,
-  description,
-  formAction,
-}: {
-  label: string
-  description: string
-  formAction: (payload: FormData) => void
-}) {
-  return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button variant="destructive" className="w-full">
-          <Power className="mr-2 h-4 w-4" />
-          {label}
-        </Button>
-      </AlertDialogTrigger>
-
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Confermi?</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Annulla</AlertDialogCancel>
-          <form action={formAction}>
-            <AlertDialogAction asChild>
-              <SubmitButton>Conferma</SubmitButton>
-            </AlertDialogAction>
-          </form>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  )
-}
-
 function ServiceCard({
   title,
   subtitle,
   status,
-  confirmText,
-  formAction,
+  checked,
+  disabled,
+  onCheckedChange,
 }: {
   title: string
   subtitle: string
   status: "online" | "offline"
-  confirmText: string
-  formAction: (payload: FormData) => void
+  checked: boolean
+  disabled?: boolean
+  onCheckedChange: (checked: boolean) => void
 }) {
   return (
     <Card className="relative overflow-hidden">
@@ -124,14 +72,18 @@ function ServiceCard({
         </div>
       </CardHeader>
       <CardContent className="relative space-y-3">
-        <ShutdownConfirm
-          label={`Shutdown ${title.toLowerCase()}`}
-          description={confirmText}
-          formAction={formAction}
-        />
-        <p className="text-xs text-muted-foreground">
-          Mock: cambia solo lo stato in UI (cookie + re-render).
-        </p>
+        <div className="flex items-center justify-between rounded-lg border p-3">
+          <div className="space-y-0.5">
+            <div className="text-sm font-medium">Power</div>
+            <div className="text-xs text-muted-foreground">0 = acceso, 1 = spento (Turso: config)</div>
+          </div>
+          <Switch
+            checked={checked}
+            onCheckedChange={onCheckedChange}
+            disabled={disabled}
+            aria-label={`Toggle ${title}`}
+          />
+        </div>
       </CardContent>
     </Card>
   )
@@ -142,27 +94,72 @@ export function DashboardClient(props: {
   websiteStatus: "online" | "offline"
   apiStatus: "online" | "offline"
   dashboardStatus: "online" | "offline"
+  adminStatus: "online" | "offline"
 }) {
-  const [websiteState, websiteFormAction] = useActionState<ActionState, FormData>(
-    shutdownWebsiteAction,
+  const router = useRouter()
+
+  const [websiteState, websiteDispatch] = useActionState<ActionState, FormData>(
+    setWebsiteActiveAction,
     null
   )
-  const [apiState, apiFormAction] = useActionState<ActionState, FormData>(shutdownApiAction, null)
-  const [dashState, dashFormAction] = useActionState<ActionState, FormData>(
-    shutdownDashboardAction,
+  const [apiState, apiDispatch] = useActionState<ActionState, FormData>(setApiActiveAction, null)
+  const [dashState, dashDispatch] = useActionState<ActionState, FormData>(
+    setDashboardActiveAction,
+    null
+  )
+  const [adminState, adminDispatch] = useActionState<ActionState, FormData>(
+    setAdminActiveAction,
     null
   )
 
+  const [isWebsitePending, startWebsite] = useTransition()
+  const [isApiPending, startApi] = useTransition()
+  const [isDashPending, startDash] = useTransition()
+  const [isAdminPending, startAdmin] = useTransition()
+
+  const [websiteActive, setWebsiteActive] = useState(props.websiteStatus === "online")
+  const [apiActive, setApiActive] = useState(props.apiStatus === "online")
+  const [dashActive, setDashActive] = useState(props.dashboardStatus === "online")
+  const [adminActive, setAdminActive] = useState(props.adminStatus === "online")
+
+  useEffect(() => setWebsiteActive(props.websiteStatus === "online"), [props.websiteStatus])
+  useEffect(() => setApiActive(props.apiStatus === "online"), [props.apiStatus])
+  useEffect(() => setDashActive(props.dashboardStatus === "online"), [props.dashboardStatus])
+  useEffect(() => setAdminActive(props.adminStatus === "online"), [props.adminStatus])
+
   useEffect(() => {
-    const s = websiteState ?? apiState ?? dashState
+    const s = websiteState ?? apiState ?? dashState ?? adminState
     if (!s) return
     if (s.ok) toast.success(`${s.title}: ok`, { description: s.message })
     else toast.error(`${s.title}: errore`, { description: s.message })
-  }, [websiteState?.ts, apiState?.ts, dashState?.ts])
+
+    // rilegge da server (Turso) i nuovi stati
+    if (s.ok) router.refresh()
+  }, [websiteState?.ts, apiState?.ts, dashState?.ts, adminState?.ts, router])
+
+  const websiteStatus: "online" | "offline" = websiteActive ? "online" : "offline"
+  const apiStatus: "online" | "offline" = apiActive ? "online" : "offline"
+  const dashboardStatus: "online" | "offline" = dashActive ? "online" : "offline"
+  const adminStatus: "online" | "offline" = adminActive ? "online" : "offline"
+
+  const setActive = useMemo(() => {
+    const fd = (checked: boolean) => {
+      const form = new FormData()
+      // checked=true => servizio ATTIVO => shutdown=0
+      form.set("active", checked ? "1" : "0")
+      return form
+    }
+    return {
+      website: (checked: boolean) => startWebsite(() => websiteDispatch(fd(checked))),
+      api: (checked: boolean) => startApi(() => apiDispatch(fd(checked))),
+      dashboard: (checked: boolean) => startDash(() => dashDispatch(fd(checked))),
+      admin: (checked: boolean) => startAdmin(() => adminDispatch(fd(checked))),
+    }
+  }, [startWebsite, websiteDispatch, startApi, apiDispatch, startDash, dashDispatch, startAdmin, adminDispatch])
 
   const activity = [
     { icon: <Activity className="h-4 w-4" />, title: "Ultima azione", desc: props.lastAction },
-    { icon: <ShieldAlert className="h-4 w-4" />, title: "Policy", desc: "Azioni per ora SOLO mock" },
+    { icon: <ShieldAlert className="h-4 w-4" />, title: "Policy", desc: "Scrive su Turso (tabella config)" },
     { icon: <Activity className="h-4 w-4" />, title: "Audit", desc: "Log completo: TODO" },
     { icon: <Activity className="h-4 w-4" />, title: "Healthcheck", desc: "TODO: ping servizi" },
   ]
@@ -215,27 +212,50 @@ export function DashboardClient(props: {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-4">
               <ServiceCard
                 title="Website"
                 subtitle="Frontend pubblico"
-                status={props.websiteStatus}
-                confirmText="Mock: imposta Website su OFFLINE."
-                formAction={websiteFormAction}
+                status={websiteStatus}
+                checked={websiteActive}
+                disabled={isWebsitePending}
+                onCheckedChange={(checked) => {
+                  setWebsiteActive(checked)
+                  setActive.website(checked)
+                }}
               />
               <ServiceCard
                 title="API"
                 subtitle="Backend services"
-                status={props.apiStatus}
-                confirmText="Mock: imposta API su OFFLINE."
-                formAction={apiFormAction}
+                status={apiStatus}
+                checked={apiActive}
+                disabled={isApiPending}
+                onCheckedChange={(checked) => {
+                  setApiActive(checked)
+                  setActive.api(checked)
+                }}
               />
               <ServiceCard
                 title="Dashboard"
                 subtitle="Pannello admin"
-                status={props.dashboardStatus}
-                confirmText="Mock: imposta Dashboard su OFFLINE."
-                formAction={dashFormAction}
+                status={dashboardStatus}
+                checked={dashActive}
+                disabled={isDashPending}
+                onCheckedChange={(checked) => {
+                  setDashActive(checked)
+                  setActive.dashboard(checked)
+                }}
+              />
+              <ServiceCard
+                title="Admin"
+                subtitle="Area amministrazione"
+                status={adminStatus}
+                checked={adminActive}
+                disabled={isAdminPending}
+                onCheckedChange={(checked) => {
+                  setAdminActive(checked)
+                  setActive.admin(checked)
+                }}
               />
             </div>
 
@@ -243,7 +263,7 @@ export function DashboardClient(props: {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Activity feed</CardTitle>
-                  <CardDescription>Per ora “semi-mock” (ultima azione + placeholder).</CardDescription>
+                  <CardDescription>Ultima azione (cookie) + placeholder.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ScrollArea className="h-56 pr-3">
@@ -288,7 +308,7 @@ export function DashboardClient(props: {
           <TabsContent value="activity">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Activity (mock)</CardTitle>
+                <CardTitle className="text-base">Activity (placeholder)</CardTitle>
                 <CardDescription>Qui poi ci mettiamo log server-side serio.</CardDescription>
               </CardHeader>
               <CardContent>
@@ -314,25 +334,75 @@ export function DashboardClient(props: {
                   Danger zone
                 </CardTitle>
                 <CardDescription>
-                  Azioni distruttive (sempre con conferma). Qui puoi mettere anche “reset”.
+                  Toggle hard (scrive su Turso: tabella <code>config</code>).
                 </CardDescription>
               </CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-3">
-                <ShutdownConfirm
-                  label="Shutdown website"
-                  description="Mock: spegne il sito (stato OFFLINE)."
-                  formAction={websiteFormAction}
-                />
-                <ShutdownConfirm
-                  label="Shutdown api"
-                  description="Mock: spegne le API (stato OFFLINE)."
-                  formAction={apiFormAction}
-                />
-                <ShutdownConfirm
-                  label="Shutdown dashboard"
-                  description="Mock: spegne la dashboard (stato OFFLINE)."
-                  formAction={dashFormAction}
-                />
+
+              <CardContent className="grid gap-3 md:grid-cols-2">
+                {/* stesso pattern per i 4 switch */}
+                {/* Website */}
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div>
+                    <div className="text-sm font-medium">Website</div>
+                    <div className="text-xs text-muted-foreground">shutdown_website</div>
+                  </div>
+                  <Switch
+                    checked={websiteActive}
+                    onCheckedChange={(checked) => {
+                      setWebsiteActive(checked)
+                      setActive.website(checked)
+                    }}
+                    disabled={isWebsitePending}
+                  />
+                </div>
+
+                {/* API */}
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div>
+                    <div className="text-sm font-medium">API</div>
+                    <div className="text-xs text-muted-foreground">shutdown_api</div>
+                  </div>
+                  <Switch
+                    checked={apiActive}
+                    onCheckedChange={(checked) => {
+                      setApiActive(checked)
+                      setActive.api(checked)
+                    }}
+                    disabled={isApiPending}
+                  />
+                </div>
+
+                {/* Dashboard */}
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div>
+                    <div className="text-sm font-medium">Dashboard</div>
+                    <div className="text-xs text-muted-foreground">shutdown_dashboard</div>
+                  </div>
+                  <Switch
+                    checked={dashActive}
+                    onCheckedChange={(checked) => {
+                      setDashActive(checked)
+                      setActive.dashboard(checked)
+                    }}
+                    disabled={isDashPending}
+                  />
+                </div>
+
+                {/* Admin */}
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div>
+                    <div className="text-sm font-medium">Admin</div>
+                    <div className="text-xs text-muted-foreground">shutdown_admin</div>
+                  </div>
+                  <Switch
+                    checked={adminActive}
+                    onCheckedChange={(checked) => {
+                      setAdminActive(checked)
+                      setActive.admin(checked)
+                    }}
+                    disabled={isAdminPending}
+                  />
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
