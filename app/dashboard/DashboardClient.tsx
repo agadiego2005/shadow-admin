@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, useTransition } from "react"
 import { useActionState } from "react"
 import { toast } from "sonner"
 import { ShieldAlert, Activity, LayoutDashboard, User } from "lucide-react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 
 import type { ActionState } from "./actions"
@@ -183,6 +184,12 @@ export function DashboardClient(props: {
           </div>
 
           <div className="flex items-center gap-3">
+            <Button asChild variant="outline" size="sm">
+              <Link href="/dashboard/monitor">
+                <Activity className="h-4 w-4" />
+                Monitor
+              </Link>
+            </Button>
             <Badge variant="outline">admin</Badge>
 
             <DropdownMenu>

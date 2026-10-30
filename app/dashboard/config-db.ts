@@ -3,7 +3,7 @@
 
 import "server-only"
 
-import { createClient, type Client } from "@libsql/client"
+import { getTursoClient as getClient } from "@/lib/turso"
 
 export type ConfigRow = {
   shutdown_website: number
@@ -11,24 +11,6 @@ export type ConfigRow = {
   shutdown_dashboard: number
   shutdown_admin: number
   updated_at: string
-}
-
-let _client: Client | null = null
-
-function getClient(): Client {
-  if (_client) return _client
-
-  const url = process.env.TURSO_DATABASE_URL
-  const authToken = process.env.TURSO_AUTH_TOKEN
-
-  if (!url) {
-    throw new Error(
-      "Missing TURSO_DATABASE_URL (o DATABASE_URL). Imposta le env per connetterti a Turso/libSQL."
-    )
-  }
-
-  _client = createClient({ url, authToken })
-  return _client
 }
 
 async function ensureConfigRow() {
