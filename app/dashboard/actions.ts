@@ -4,76 +4,63 @@
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
+
+import { logAudit } from "@/lib/audit"
 import { requireAdmin } from "@/lib/auth"
+import { isServiceKey, SERVICE_KEYS, SERVICES } from "@/lib/services"
 
-import { setShutdownFlag, type ServiceKey } from "./config-db"
+import { getConfig, isServiceOn, setShutdownFlags } from "./config-db"
 
-export type ActionState = { ok: boolean; title: string; message: string; ts: string } | null
+export type ActionResult = { ok: boolean; message: string }
 
-const cookieOpts = {
-  httpOnly: true as const,
-  sameSite: "lax" as const,
-  secure: process.env.NODE_ENV === "production",
-  path: "/",
-  maxAge: 60 * 60 * 24 * 7,
+function errorMessage(e: unknown) {
+  return e instanceof Error ? e.message : "Errore sconosciuto"
 }
 
-function nowTs() {
-  return new Date().toISOString()
-}
-
-async function setLastAction(value: string) {
-  const store = await cookies()
-  store.set("last_shutdown_action", value, cookieOpts)
-}
-
-function shutdownValueFromForm(fd: FormData): 0 | 1 {
-  // active=1 => servizio acceso  => shutdown=0
-  // active=0 => servizio spento  => shutdown=1
-  const active = String(fd.get("active") ?? "")
-  return active === "1" ? 0 : 1
-}
-
-async function setService(service: ServiceKey, title: string, fd: FormData): Promise<ActionState> {
+/** Accende o spegne un servizio (config.shutdown_<servizio>: 0 = acceso, 1 = spento). */
+export async function setServiceActive(service: unknown, active: unknown): Promise<ActionResult> {
   await requireAdmin()
+  if (!isServiceKey(service) || typeof active !== "boolean") {
+    return { ok: false, message: "Richiesta non valida." }
+  }
 
   try {
-    const shutdown = shutdownValueFromForm(fd)
-    await setShutdownFlag(service, shutdown)
-
-    const pretty = shutdown === 0 ? "ACCESO" : "SPENTO"
-    await setLastAction(`${service}: ${pretty}`)
-
-    revalidatePath("/dashboard")
-    return {
-      ok: true,
-      title,
-      message: `${title} impostato ${pretty} (Turso: config.${"shutdown_" + service}).`,
-      ts: nowTs(),
-    }
-  } catch (e: any) {
-    const msg = e?.message ? String(e.message) : "Errore sconosciuto"
-    return { ok: false, title, message: msg, ts: nowTs() }
+    await setShutdownFlags([service], active ? 0 : 1)
+  } catch (e) {
+    return { ok: false, message: errorMessage(e) }
   }
+
+  await logAudit(active ? "service_on" : "service_off", service)
+  revalidatePath("/dashboard", "layout")
+  return { ok: true, message: `${SERVICES[service].label} ${active ? "acceso" : "spento"}.` }
 }
 
-export async function setWebsiteActiveAction(_prev: ActionState, fd: FormData) {
-  return setService("website", "Website", fd)
-}
+/** Accende o spegne tutti i servizi; nel registro finiscono solo quelli che cambiano davvero. */
+export async function setAllServicesActive(active: unknown): Promise<ActionResult> {
+  await requireAdmin()
+  if (typeof active !== "boolean") return { ok: false, message: "Richiesta non valida." }
 
-export async function setApiActiveAction(_prev: ActionState, fd: FormData) {
-  return setService("api", "API", fd)
-}
+  let changed: (typeof SERVICE_KEYS)[number][]
+  try {
+    const cfg = await getConfig()
+    changed = SERVICE_KEYS.filter((service) => isServiceOn(cfg, service) !== active)
+    await setShutdownFlags(changed, active ? 0 : 1)
+  } catch (e) {
+    return { ok: false, message: errorMessage(e) }
+  }
 
-export async function setDashboardActiveAction(_prev: ActionState, fd: FormData) {
-  return setService("dashboard", "Dashboard", fd)
-}
+  for (const service of changed) await logAudit(active ? "service_on" : "service_off", service)
+  revalidatePath("/dashboard", "layout")
 
-export async function setAdminActiveAction(_prev: ActionState, fd: FormData) {
-  return setService("admin", "Admin", fd)
+  if (changed.length === 0) {
+    return { ok: true, message: `Erano già tutti ${active ? "accesi" : "spenti"}.` }
+  }
+  const names = changed.map((service) => SERVICES[service].label).join(", ")
+  return { ok: true, message: `${active ? "Accesi" : "Spenti"}: ${names}.` }
 }
 
 export async function logoutAction() {
+  await logAudit("logout")
   const store = await cookies()
   store.delete("admin_session")
   redirect("/login")

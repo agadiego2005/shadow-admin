@@ -3,6 +3,7 @@
 
 import "server-only"
 
+import { SERVICES, type ServiceKey } from "@/lib/services"
 import { getTursoClient as getClient } from "@/lib/turso"
 
 export type ConfigRow = {
@@ -40,7 +41,7 @@ export async function getConfig(): Promise<ConfigRow> {
     sql: "SELECT shutdown_website, shutdown_api, shutdown_dashboard, shutdown_admin, updated_at FROM config WHERE id = 1",
   })
 
-  const row = res.rows?.[0] as any
+  const row = res.rows[0] as (typeof res.rows)[number] | undefined
   if (!row) {
     return {
       shutdown_website: 0,
@@ -60,24 +61,25 @@ export async function getConfig(): Promise<ConfigRow> {
   }
 }
 
-export type ServiceKey = "website" | "api" | "dashboard" | "admin"
-
-const FIELD_BY_SERVICE: Record<ServiceKey, string> = {
-  website: "shutdown_website",
-  api: "shutdown_api",
-  dashboard: "shutdown_dashboard",
-  admin: "shutdown_admin",
+/** Servizio acceso? In DB: 0 = acceso, 1 = spento. */
+export function isServiceOn(cfg: ConfigRow, service: ServiceKey) {
+  return cfg[SERVICES[service].column as keyof ConfigRow] === 0
 }
 
 export async function setShutdownFlag(service: ServiceKey, shutdown: 0 | 1) {
+  await setShutdownFlags([service], shutdown)
+}
+
+export async function setShutdownFlags(services: readonly ServiceKey[], shutdown: 0 | 1) {
+  if (services.length === 0) return
   const client = getClient()
   await ensureConfigRow()
 
-  const field = FIELD_BY_SERVICE[service]
+  const fields = services.map((service) => `${SERVICES[service].column} = ?`)
   await client.execute({
     sql: `UPDATE config
-          SET ${field} = ?, updated_at = (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+          SET ${fields.join(", ")}, updated_at = (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
           WHERE id = 1`,
-    args: [shutdown],
+    args: services.map(() => shutdown),
   })
 }
